@@ -1,0 +1,2962 @@
+{
+	"info": {
+		"_postman_id": "fc908ca9-9d3b-4fe3-8cbc-e964248a0b18",
+		"name": "Cloud Provider LCM 1.2",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login - Create token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonResponse = pm.response.json();\r",
+									"var JSESSIONID = jsonResponse[\"JSESSIONID\"];\r",
+									"pm.collectionVariables.set(\"JSESSIONID\", JSESSIONID);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"username\": \"vcplcm\", \"password\": \"VMware01!\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://vcp_lcm_ip_address:9443/api/v1/session",
+							"protocol": "https",
+							"host": [
+								"vcp_lcm_ip_address"
+							],
+							"port": "9443",
+							"path": [
+								"api",
+								"v1",
+								"session"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Deploy",
+			"item": [
+				{
+					"name": "Deploy VCD",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonResponse = pm.response.json();\r",
+									"var taskId = jsonResponse[\"taskId\"];\r",
+									"pm.collectionVariables.set(\"last_task_id\", taskId);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "cplcm",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "cplcm",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "JSESSIONID",
+								"value": "{{JSESSIONID}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"environmentName\": \"{{vcd_env_id}}\",\n    \"products\": [\n        {\n            \"properties\": {\n                \"installationId\": 1,\n                \"systemName\": \"vcd-1-vms\",\n                \"dbPassword\": \"{{password}}\",\n                \"keystorePassword\": \"{{password}}\",\n                \"clusterFailoverMode\": \"MANUAL\",\n                \"publicAddress\": {\n                    \"consoleProxyExternalAddress\": \"{{vcd_lb_ip}}:8443\",\n                    \"restApiBaseHttpUri\": \"http://{{vcd_lb_ip}}\",\n                    \"restApiBaseUri\": \"https://{{vcd_lb_ip}}\",\n                    \"tenantPortalExternalHttpAddress\": \"http://{{vcd_lb_ip}}\",\n                    \"tenantPortalExternalAddress\": \"https://{{vcd_lb_ip}}\"\n                },\n                \"adminEmail\": \"admin_email\",\n                \"adminFullName\": \"admin_name\",\n                \"nfsMount\": \"{{vcd_nfs_mount}}\"\n            },\n            \"certificate\": {\n                \"product\": {\n                    \"certificate\": \"{{vcd_cert}}\",\n                    \"privateKey\": \"{{vcd_cert_key}}\"\n                },\n                \"restApi\": {\n                    \"certificate\": \"{{vcd_public_cert}}\"\n                },\n                \"tenantPortal\": {\n                    \"certificate\": \"{{vcd_public_cert}}\"\n                }\n            },\n            \"integrations\": [\n                {\n                    \"integrationId\": \"vcd-01-to-vc-01\",\n                    \"datacenterComponentType\": \"VCENTER\",\n                    \"hostname\": \"{{vcenter_hostname}}.{{domainName}}\",\n                    \"integrationUsername\": \"administrator@vsphere.local\",\n                    \"integrationPassword\": \"{{vc_password}}\",\n                    \"properties\": {\n                        \"providerVdcs\": {\n                                \"PVDC-1\": {\n                                \"description\": \"m01vc01-comp-rp\",\n                                \"highestSupportedHardwareVersion\": \"vmx-14\",\n                                \"isEnabled\": true,\n                                \"clusterName\": \"{{vc_cluster}}\",\n                                \"resourcePoolname\": \"{{pvdc_resource_pool}}\",\n                                \"nsxIntegration\": \"vcd-01-to-nsx-01\",\n                                \"storageProfile\":[\n                                    \"{{pvdc_storage_profile}}\"\n                                ],\n                                \"networkPoolname\":\"NP-1\"\n                            }\n                        }\n                    }\n                },\n                {\n                    \"integrationId\": \"vcd-01-to-nsx-01\",\n                    \"datacenterComponentType\": \"NSXT\",\n                    \"hostname\": \"{{nsxt_hostname}}.{{domainName}}\",\n                    \"integrationUsername\": \"admin\",\n                    \"integrationPassword\": \"{{nsx_password}}\",\n                    \"properties\": {\n                        \"networkPools\": {\n                            \"NP-1\": \"{{pvdc_np_transport_zone}}\"\n                        },\n                        \"vcdExternalNetworks\": {\n                            \"EN-1\": {\n                                \"subnets\": [\n                                    {\n                                        \"gateway\": \"gateway_ip_address\",\n                                        \"prefixLength\": 24,\n                                        \"dnsServer1\": \"\",\n                                        \"ipRanges\":  [\n                                            {\n                                                \"startAddress\": \"192.168.91.150\",\n                                                \"endAddress\": \"192.168.91.200\"\n                                            }\n                                        ]\n                                    }\n                                ],\n                                \"description\": \"ExternalNetworkCreatedViaVCDBringup\",\n                                \"tier0Name\": \"{{pvdc_ext_nw_tier0_gw}}\"\n                            }\n                        }\n                    }\n                },\n                {\n                    \"integrationId\": \"vcd-01-to-rmq-01\",\n                    \"productType\": \"RMQ\",\n                    \"hostname\": \"{{rmq_lb_name}}.{{domainName}}\",\n                    \"port\": \"{{rmq_port_amqp_ssl}}\",\n                    \"integrationUsername\": \"svc_vcd\",\n                    \"integrationPassword\": \"{{password}}\",\n                    \"properties\": {\n                        \"amqpExchange\": \"systemExchange\",\n                        \"amqpVHost\": \"/\",\n                        \"amqpUseSSL\": true,\n                        \"amqpSslAcceptAll\": true,\n                        \"amqpPrefix\": \"vcd\"\n                    }\n                }\n            ],\n            \"productType\": \"VCD\",\n            \"productId\": \"{{vcd_product_id}}\",\n            \"version\": \"vcd_version\",\n            \"license\": \"{{vcd_license}}\",\n            \"adminPassword\": \"{{password}}\",\n            \"nodes\": [\n                {\n                    \"hostName\": \"{{vcd_cell_1_name}}.{{domainName}}\",\n                    \"vmName\": \"{{vcd_cell_1_name}}\",\n                    \"rootPassword\": \"{{password}}\",\n                    \"gateway\": \"{{vcd_mgmt_nw_gateway}}\",\n                    \"nics\": [\n                        {\n                            \"ipAddress\": \"{{vcd_cell_1_ip}}\",\n                            \"networkName\": \"vcd-dmz-nw\",\n                            \"staticRoutes\": []\n                        }, {\n                            \"ipAddress\": \"{{vcd_cell_1_mgmt_ip}}\",\n                            \"networkName\": \"vcd-mgmt-nw\",\n                            \"staticRoutes\": []\n                        }\n                    ]\n                },\n                {\n                    \"hostName\": \"{{vcd_cell_2_name}}.{{domainName}}\",\n                    \"vmName\": \"{{vcd_cell_2_name}}\",\n                    \"rootPassword\": \"{{password}}\",\n                    \"gateway\": \"{{vcd_mgmt_nw_gateway}}\",\n                    \"nics\": [\n                        {\n                            \"ipAddress\": \"{{vcd_cell_2_ip}}\",\n                            \"networkName\": \"vcd-dmz-nw\",\n                            \"staticRoutes\": []\n                        }, {\n                            \"ipAddress\": \"{{vcd_cell_2_mgmt_ip}}\",\n                            \"networkName\": \"vcd-mgmt-nw\",\n                            \"staticRoutes\": []\n                        }\n                    ]\n                }\n            ]\n        }\n    ],\n    \"deploymentInfrastructures\": {\n        \"infra1\": {\n            \"vcenter\": {\n                \"vcenterName\": \"mgmt-vc\",\n                \"vcenterHost\": \"{{vcenter_hostname}}.{{domainName}}\",\n                \"vcenterUsername\": \"administrator@vsphere.local\",\n                \"vcenterPassword\": \"{{vc_password}}\",\n                \"datacenterName\": \"{{vc_datacenter}}\",\n                \"clusterName\": \"{{vc_cluster}}\",\n                \"resourcePool\": \"{{vc_res_pool}}\",\n                \"datastores\": [\n                    \"{{vc_datastore}}\"\n                ],\n                \"networks\": {\n                    \"vcd-dmz-nw\": {\n                        \"portGroupName\": \"{{vcd_dmz_portgroup}}\",\n                        \"gateway\": \"{{vcd_dmz_gateway}}\",\n                        \"subnetMask\": \"{{vcd_dmz_subnet}}\",\n                        \"domainName\": \"{{domainName}}\",\n                        \"searchPath\": [\n                            \"{{domainName}}\"\n                        ],\n                        \"useDhcp\": false,\n                        \"dns\": [\n                            \"{{dns}}\"\n                        ],\n                        \"ntp\": [\n                            \"{{ntp}}\"\n                        ]\n                    },\n                    \"vcd-mgmt-nw\": {\n                        \"portGroupName\": \"{{vcd_mgmt_nw_portgroup}}\",\n                        \"gateway\": \"{{vcd_mgmt_nw_gateway}}\",\n                        \"subnetMask\": \"{{vcd_mgmt_nw_subnet}}\",\n                        \"useDhcp\": false\n                    }\n                }\n            }\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "https://vcp_lcm_ip_address:port-number/api/api-versionlcm/environment?action=DEPLOY",
+							"protocol": "https",
+							"host": [
+								"vcp_lcm_ip_address"
+							],
+							"port": "port-number",
+							"path": [
+								"api",
+								"api-versionlcm",
+								"environment"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "DEPLOY"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Deploy  VROPS Tenant App",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonResponse = pm.response.json();",
+									"var taskId = jsonResponse[\"taskId\"];",
+									"pm.collectionVariables.set(\"last_task_id\", taskId);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "cplcm",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "cplcm",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "JSESSIONID",
+								"type": "text",
+								"value": "{{JSESSIONID}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"environmentName\": \"{{vcd_env_id}}\",\n    \"products\": [\n        {\n            \"properties\": {\n                \"installationId\": 1,\n                \"systemName\": \"vcd-1-vms\",\n                \"dbPassword\": \"{{password}}\",\n                \"keystorePassword\": \"{{password}}\",\n                \"clusterFailoverMode\": \"MANUAL\",\n                \"publicAddress\": {\n                    \"consoleProxyExternalAddress\": \"{{vcd_lb_ip}}:8443\",\n                    \"restApiBaseHttpUri\": \"http://{{vcd_lb_ip}}\",\n                    \"restApiBaseUri\": \"https://{{vcd_lb_ip}}\",\n                    \"tenantPortalExternalHttpAddress\": \"http://{{vcd_lb_ip}}\",\n                    \"tenantPortalExternalAddress\": \"https://{{vcd_lb_ip}}\"\n                },\n                \"adminEmail\": \"admin_email\",\n                \"adminFullName\": \"admin_name\",\n                \"nfsMount\": \"{{vcd_nfs_mount}}\"\n            },\n            \"certificate\": {\n                \"product\": {\n                    \"certificate\": \"{{vcd_cert}}\",\n                    \"privateKey\": \"{{vcd_cert_key}}\"\n                },\n                \"restApi\": {\n                    \"certificate\": \"{{vcd_public_cert}}\"\n                },\n                \"tenantPortal\": {\n                    \"certificate\": \"{{vcd_public_cert}}\"\n                }\n            },\n            \"integrations\": [\n                {\n                    \"integrationId\": \"vcd-01-to-vc-01\",\n                    \"datacenterComponentType\": \"VCENTER\",\n                    \"hostname\": \"{{vcenter_hostname}}.{{domainName}}\",\n                    \"integrationUsername\": \"administrator@vsphere.local\",\n                    \"integrationPassword\": \"{{vc_password}}\",\n                    \"properties\": {\n                        \"providerVdcs\": {\n                                \"PVDC-1\": {\n                                \"description\": \"m01vc01-comp-rp\",\n                                \"highestSupportedHardwareVersion\": \"vmx-14\",\n                                \"isEnabled\": true,\n                                \"clusterName\": \"{{vc_cluster}}\",\n                                \"resourcePoolname\": \"{{pvdc_resource_pool}}\",\n                                \"nsxIntegration\": \"vcd-01-to-nsx-01\",\n                                \"storageProfile\":[\n                                    \"{{pvdc_storage_profile}}\"\n                                ],\n                                \"networkPoolname\":\"NP-1\"\n                            }\n                        }\n                    }\n                },\n                {\n                    \"integrationId\": \"vcd-01-to-nsx-01\",\n                    \"datacenterComponentType\": \"NSXT\",\n                    \"hostname\": \"{{nsxt_hostname}}.{{domainName}}\",\n                    \"integrationUsername\": \"admin\",\n                    \"integrationPassword\": \"{{nsx_password}}\",\n                    \"properties\": {\n                        \"networkPools\": {\n                            \"NP-1\": \"{{pvdc_np_transport_zone}}\"\n                        },\n                        \"vcdExternalNetworks\": {\n                            \"EN-1\": {\n                                \"subnets\": [\n                                    {\n                                        \"gateway\": \"gateway_ip_address\",\n                                        \"prefixLength\": 24,\n                                        \"dnsServer1\": \"\",\n                                        \"ipRanges\":  [\n                                            {\n                                                \"startAddress\": \"192.168.91.150\",\n                                                \"endAddress\": \"192.168.91.200\"\n                                            }\n                                        ]\n                                    }\n                                ],\n                                \"description\": \"ExternalNetworkCreatedViaVCDBringup\",\n                                \"tier0Name\": \"{{pvdc_ext_nw_tier0_gw}}\"\n                            }\n                        }\n                    }\n                },\n                {\n                    \"integrationId\": \"vcd-01-to-rmq-01\",\n                    \"productType\": \"RMQ\",\n                    \"hostname\": \"{{rmq_lb_name}}.{{domainName}}\",\n                    \"port\": \"{{rmq_port_amqp_ssl}}\",\n                    \"integrationUsername\": \"svc_vcd\",\n                    \"integrationPassword\": \"{{password}}\",\n                    \"properties\": {\n                        \"amqpExchange\": \"systemExchange\",\n                        \"amqpVHost\": \"/\",\n                        \"amqpUseSSL\": true,\n                        \"amqpSslAcceptAll\": true,\n                        \"amqpPrefix\": \"vcd\"\n                    }\n                }\n            ],\n            \"productType\": \"VCD\",\n            \"productId\": \"{{vcd_product_id}}\",\n            \"version\": \"vcd_version\",\n            \"license\": \"{{vcd_license}}\",\n            \"adminPassword\": \"{{password}}\",\n            \"nodes\": [\n                {\n                    \"hostName\": \"{{vcd_cell_1_name}}.{{domainName}}\",\n                    \"vmName\": \"{{vcd_cell_1_name}}\",\n                    \"rootPassword\": \"{{password}}\",\n                    \"gateway\": \"{{vcd_mgmt_nw_gateway}}\",\n                    \"nics\": [\n                        {\n                            \"ipAddress\": \"{{vcd_cell_1_ip}}\",\n                            \"networkName\": \"vcd-dmz-nw\",\n                            \"staticRoutes\": []\n                        }, {\n                            \"ipAddress\": \"{{vcd_cell_1_mgmt_ip}}\",\n                            \"networkName\": \"vcd-mgmt-nw\",\n                            \"staticRoutes\": []\n                        }\n                    ]\n                },\n                {\n                    \"hostName\": \"{{vcd_cell_2_name}}.{{domainName}}\",\n                    \"vmName\": \"{{vcd_cell_2_name}}\",\n                    \"rootPassword\": \"{{password}}\",\n                    \"gateway\": \"{{vcd_mgmt_nw_gateway}}\",\n                    \"nics\": [\n                        {\n                            \"ipAddress\": \"{{vcd_cell_2_ip}}\",\n                            \"networkName\": \"vcd-dmz-nw\",\n                            \"staticRoutes\": []\n                        }, {\n                            \"ipAddress\": \"{{vcd_cell_2_mgmt_ip}}\",\n                            \"networkName\": \"vcd-mgmt-nw\",\n                            \"staticRoutes\": []\n                        }\n                    ]\n                }\n            ]\n        }\n    ],\n    \"deploymentInfrastructures\": {\n        \"infra1\": {\n            \"vcenter\": {\n                \"vcenterName\": \"mgmt-vc\",\n                \"vcenterHost\": \"{{vcenter_hostname}}.{{domainName}}\",\n                \"vcenterUsername\": \"administrator@vsphere.local\",\n                \"vcenterPassword\": \"{{vc_password}}\",\n                \"datacenterName\": \"{{vc_datacenter}}\",\n                \"clusterName\": \"{{vc_cluster}}\",\n                \"resourcePool\": \"{{vc_res_pool}}\",\n                \"datastores\": [\n                    \"{{vc_datastore}}\"\n                ],\n                \"networks\": {\n                    \"vcd-dmz-nw\": {\n                        \"portGroupName\": \"{{vcd_dmz_portgroup}}\",\n                        \"gateway\": \"{{vcd_dmz_gateway}}\",\n                        \"subnetMask\": \"{{vcd_dmz_subnet}}\",\n                        \"domainName\": \"{{domainName}}\",\n                        \"searchPath\": [\n                            \"{{domainName}}\"\n                        ],\n                        \"useDhcp\": false,\n                        \"dns\": [\n                            \"{{dns}}\"\n                        ],\n                        \"ntp\": [\n                            \"{{ntp}}\"\n                        ]\n                    },\n                    \"vcd-mgmt-nw\": {\n                        \"portGroupName\": \"{{vcd_mgmt_nw_portgroup}}\",\n                        \"gateway\": \"{{vcd_mgmt_nw_gateway}}\",\n                        \"subnetMask\": \"{{vcd_mgmt_nw_subnet}}\",\n                        \"useDhcp\": false\n                    }\n                }\n            }\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "https://vcp_lcm_ip_address:port-number/api/api-versionlcm/environment?action=DEPLOY",
+							"protocol": "https",
+							"host": [
+								"vcp_lcm_ip_address"
+							],
+							"port": "port-number",
+							"path": [
+								"api",
+								"api-versionlcm",
+								"environment"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "DEPLOY"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Deploy RabbitMQ",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonResponse = pm.response.json();",
+									"var taskId = jsonResponse[\"taskId\"];",
+									"pm.collectionVariables.set(\"last_task_id\", taskId);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "cplcm",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "cplcm",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "JSESSIONID",
+								"type": "text",
+								"value": "{{JSESSIONID}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"environmentName\": \"{{rmq_env_id}}\",\n    \"products\": [\n        {\n            \"productType\": \"RMQ\",\n            \"productId\": \"{{rmq_product_id}}\",\n            \"version\": \"version_number\",\n            \"adminPassword\": \"{{password}}\",\n            \"properties\": {\n                \"lbName\": \"{{rmq_lb_name}}\",\n                \"lbFqdn\": \"{{rmq_lb_name}}.{{domainName}}\",\n                \"lbIp\": \"{{rmq_lb_ip}}\",\n                \"portAmqpSsl\": \"{{rmq_port_amqp_ssl}}\",\n                \"portRmqMgmt\": \"{{rmq_port_mgmt}}\",\n                \"users\": [\n                    {\n                        \"username\": \"user_name\",\n                        \"password\": \"{{password}}\"\n                    },\n                    {\n                        \"username\": \"user_name\",\n                        \"password\": \"{{password}}\"\n                    }\n                ]\n            }, \n            \"nodes\": [\n                {\n                    \"hostName\": \"{{rmq_01_name}}.{{domainName}}\",\n                    \"vmName\": \"{{rmq_01_name}}\",\n                    \"rootPassword\": \"{{password}}\",\n                    \"cpuNum\": \"2\",\n                    \"ramMemory\": \"4096\",\n                    \"nics\": [\n                        {\n                            \"ipAddress\": \"{{rmq_01_ip}}\",\n                            \"networkName\": \"mgmt-nw\"\n                        }\n                    ]\n                },\n                {\n                    \"hostName\": \"{{rmq_02_name}}.{{domainName}}\",\n                    \"vmName\": \"{{rmq_02_name}}\",\n                    \"rootPassword\": \"{{password}}\",\n                    \"cpuNum\": \"2\",\n                    \"ramMemory\": \"4096\",\n                    \"nics\": [\n                        {\n                            \"ipAddress\": \"{{rmq_02_ip}}\",\n                            \"networkName\": \"mgmt-nw\"\n                        }\n                    ]\n                }\n            ]\n        }\n    ],\n    \"deploymentInfrastructures\": {\n        \"infra1\": {\n            \"vcenter\": {\n                \"vcenterName\": \"mgmt-vc\",\n                \"vcenterHost\": \"{{vcenter_hostname}}.{{domainName}}\",\n                \"vcenterUsername\": \"administrator@vsphere.local\",\n                \"vcenterPassword\": \"{{vc_password}}\",\n                \"datacenterName\": \"{{vc_datacenter}}\",\n                \"clusterName\": \"{{vc_cluster}}\",\n                \"resourcePool\": \"{{vc_res_pool}}\",\n                \"datastores\": [\n                    \"{{vc_datastore}}\"\n                ],\n                \"networks\": {\n                    \"mgmt-nw\": {\n                        \"portGroupName\": \"{{mgmt_nw_portgroup}}\",\n                        \"gateway\": \"{{mgmt_nw_gateway}}\",\n                        \"subnetMask\": \"{{mgmt_nw_subnet}}\",\n                        \"domainName\": \"{{domainName}}\",\n                        \"searchPath\": [\n                            \"{{domainName}}\"\n                        ],\n                        \"useDhcp\": false,\n                        \"dns\": [\n                            \"{{dns}}\"\n                        ],\n                        \"ntp\": [\n                            \"{{ntp}}\"\n                        ]\n                    }\n                }\n            }\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "https://vcp_lcm_ip_address:port-number/api/api_versionlcm/environment?action=DEPLOY",
+							"protocol": "https",
+							"host": [
+								"vcp_lcm_ip_address"
+							],
+							"port": "port-number",
+							"path": [
+								"api",
+								"api_versionlcm",
+								"environment"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "DEPLOY"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Deploy Usage Meter",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonResponse = pm.response.json();",
+									"var taskId = jsonResponse[\"taskId\"];",
+									"pm.collectionVariables.set(\"last_task_id\", taskId);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "cplcm",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "cplcm",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "JSESSIONID",
+								"type": "text",
+								"value": "{{JSESSIONID}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"environmentName\": \"{{um_env_id}}\",\n    \"products\": [\n        {\n            \"properties\": {\n                \"auditorPassword\": \"{{password}}\",\n                \"proxy\": {\n                    \"type\": \"none\"\n                }\n            },\n            \"productType\": \"USAGE\",\n            \"productId\": \"{{um_product_id}}\",\n            \"version\": \"usage_meter_version\",\n            \"adminPassword\": \"{{password}}\",\n            \"integrations\": [\n                {\n                    \"integrationId\": \"um-01-to-vc-01\",\n                    \"datacenterComponentType\": \"VCENTER\",\n                    \"hostname\": \"{{vcenter_hostname}}.{{domainName}}\",\n                    \"integrationUsername\": \"administrator@vsphere.local\",\n                    \"integrationPassword\": \"{{vc_password}}\",\n                    \"properties\": {\n                        \"externalSSO\": false,\n                        \"vcfEdition\": \"Enterprise\"\n                    }\n                },\n            \"nodes\": [\n                {\n                    \"hostName\": \"{{usage_meter_name}}.{{domainName}}\",\n                    \"vmName\": \"{{usage_meter_name}}\",\n                    \"rootPassword\": \"{{password}}\",\n                    \"nics\": [\n                        {\n                            \"ipAddress\": \"{{usage_meter_ip}}\",\n                            \"networkName\": \"mgmt-nw\"\n                        }\n                    ]\n                }\n            ]\n        }\n    ],\n    \"deploymentInfrastructures\": {\n        \"infra1\": {\n            \"vcenter\": {\n                \"vcenterName\": \"mgmt-vc\",\n                \"vcenterHost\": \"{{vcenter_hostname}}.{{domainName}}\",\n                \"vcenterUsername\": \"administrator@vsphere.local\",\n                \"vcenterPassword\": \"{{vc_password}}\",\n                \"datacenterName\": \"{{vc_datacenter}}\",\n                \"clusterName\": \"{{vc_cluster}}\",\n                \"resourcePool\": \"{{vc_res_pool}}\",\n                \"datastores\": [\n                    \"{{vc_datastore}}\"\n                ],\n                \"networks\": {\n                    \"mgmt-nw\": {\n                        \"portGroupName\": \"{{mgmt_nw_portgroup}}\",\n                        \"gateway\": \"{{mgmt_nw_gateway}}\",\n                        \"subnetMask\": \"{{mgmt_nw_subnet}}\",\n                        \"domainName\": \"{{domainName}}\",\n                        \"searchPath\": [\n                            \"{{domainName}}\"\n                        ],\n                        \"useDhcp\": false,\n                        \"dns\": [\n                            \"{{dns}}\"\n                        ],\n                        \"ntp\": [\n                            \"{{ntp}}\"\n                        ]\n                    }\n                }\n            }\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "https://vcp_lcm_ip_address:port-number/api/api_versionlcm/environment?action=DEPLOY",
+							"protocol": "https",
+							"host": [
+								"vcp_lcm_ip_address"
+							],
+							"port": "port-number",
+							"path": [
+								"api",
+								"api_versionlcm",
+								"environment"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "DEPLOY"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Import",
+			"item": [
+				{
+					"name": "Import env - VCD",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonResponse = pm.response.json();",
+									"var taskId = jsonResponse[\"taskId\"];",
+									"pm.collectionVariables.set(\"last_task_id\", taskId);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "cplcm",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "cplcm",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "JSESSIONID",
+								"type": "text",
+								"value": "{{JSESSIONID}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"environmentName\": \"{{vcd_env_id}}\",\n    \"products\": [\n        {\n            \"properties\": {\n                \"installationId\": 1,\n                \"systemName\": \"vcd-1-vms\",\n                \"dbPassword\": \"{{password}}\",\n                \"keystorePassword\": \"{{password}}\",\n                \"clusterFailoverMode\": \"MANUAL\",\n                \"publicAddress\": {\n                    \"consoleProxyExternalAddress\": \"{{vcd_lb_ip}}:8443\",\n                    \"restApiBaseHttpUri\": \"http://{{vcd_lb_ip}}\",\n                    \"restApiBaseUri\": \"https://{{vcd_lb_ip}}\",\n                    \"tenantPortalExternalHttpAddress\": \"http://{{vcd_lb_ip}}\",\n                    \"tenantPortalExternalAddress\": \"https://{{vcd_lb_ip}}\"\n                },\n                \"adminEmail\": \"admin_email\",\n                \"adminFullName\": \"admin_name\",\n                \"nfsMount\": \"{{vcd_nfs_mount}}\"\n            },\n            \"certificate\": {\n                \"product\": {\n                    \"certificate\": \"{{vcd_cert}}\",\n                    \"privateKey\": \"{{vcd_cert_key}}\"\n                },\n                \"restApi\": {\n                    \"certificate\": \"{{vcd_public_cert}}\"\n                },\n                \"tenantPortal\": {\n                    \"certificate\": \"{{vcd_public_cert}}\"\n                }\n            },\n            \"integrations\": [\n                {\n                    \"integrationId\": \"vcd-01-to-vc-01\",\n                    \"datacenterComponentType\": \"VCENTER\",\n                    \"hostname\": \"{{vcenter_hostname}}.{{domainName}}\",\n                    \"integrationUsername\": \"administrator@vsphere.local\",\n                    \"integrationPassword\": \"{{vc_password}}\",\n                    \"properties\": {\n                        \"providerVdcs\": {\n                                \"PVDC-1\": {\n                                \"description\": \"m01vc01-comp-rp\",\n                                \"highestSupportedHardwareVersion\": \"vmx-14\",\n                                \"isEnabled\": true,\n                                \"clusterName\": \"{{vc_cluster}}\",\n                                \"resourcePoolname\": \"{{pvdc_resource_pool}}\",\n                                \"nsxIntegration\": \"vcd-01-to-nsx-01\",\n                                \"storageProfile\":[\n                                    \"{{pvdc_storage_profile}}\"\n                                ],\n                                \"networkPoolname\":\"NP-1\"\n                            }\n                        }\n                    }\n                },\n                {\n                    \"integrationId\": \"vcd-01-to-nsx-01\",\n                    \"datacenterComponentType\": \"NSXT\",\n                    \"hostname\": \"{{nsxt_hostname}}.{{domainName}}\",\n                    \"integrationUsername\": \"admin\",\n                    \"integrationPassword\": \"{{nsx_password}}\",\n                    \"properties\": {\n                        \"networkPools\": {\n                            \"NP-1\": \"{{pvdc_np_transport_zone}}\"\n                        },\n                        \"vcdExternalNetworks\": {\n                            \"EN-1\": {\n                                \"subnets\": [\n                                    {\n                                        \"gateway\": \"192.168.91.1\",\n                                        \"prefixLength\": 24,\n                                        \"dnsServer1\": \"\",\n                                        \"ipRanges\":  [\n                                            {\n                                                \"startAddress\": \"192.168.91.150\",\n                                                \"endAddress\": \"192.168.91.200\"\n                                            }\n                                        ]\n                                    }\n                                ],\n                                \"description\": \"ExternalNetworkCreatedViaVCDBringup\",\n                                \"tier0Name\": \"{{pvdc_ext_nw_tier0_gw}}\"\n                            }\n                        }\n                    }\n                },\n                {\n                    \"integrationId\": \"vcd-01-to-rmq-01\",\n                    \"productType\": \"RMQ\",\n                    \"hostname\": \"{{rmq_lb_name}}.{{domainName}}\",\n                    \"port\": \"{{rmq_port_amqp_ssl}}\",\n                    \"integrationUsername\": \"svc_vcd\",\n                    \"integrationPassword\": \"{{password}}\",\n                    \"properties\": {\n                        \"amqpExchange\": \"systemExchange\",\n                        \"amqpVHost\": \"/\",\n                        \"amqpUseSSL\": true,\n                        \"amqpSslAcceptAll\": true,\n                        \"amqpPrefix\": \"vcd\"\n                    }\n                }\n            ],\n            \"productType\": \"VCD\",\n            \"productId\": \"{{vcd_product_id}}\",\n            \"version\": \"10.1.2\",\n            \"license\": \"{{vcd_license}}\",\n            \"adminPassword\": \"{{password}}\",\n            \"nodes\": [\n                {\n                    \"hostName\": \"{{vcd_cell_1_name}}.{{domainName}}\",\n                    \"vmName\": \"{{vcd_cell_1_name}}\",\n                    \"rootPassword\": \"{{password}}\",\n                    \"gateway\": \"{{vcd_mgmt_nw_gateway}}\",\n                    \"nics\": [\n                        {\n                            \"ipAddress\": \"{{vcd_cell_1_ip}}\",\n                            \"networkName\": \"vcd-dmz-nw\",\n                            \"staticRoutes\": []\n                        }, {\n                            \"ipAddress\": \"{{vcd_cell_1_mgmt_ip}}\",\n                            \"networkName\": \"vcd-mgmt-nw\",\n                            \"staticRoutes\": []\n                        }\n                    ]\n                },\n                {\n                    \"hostName\": \"{{vcd_cell_2_name}}.{{domainName}}\",\n                    \"vmName\": \"{{vcd_cell_2_name}}\",\n                    \"rootPassword\": \"{{password}}\",\n                    \"gateway\": \"{{vcd_mgmt_nw_gateway}}\",\n                    \"nics\": [\n                        {\n                            \"ipAddress\": \"{{vcd_cell_2_ip}}\",\n                            \"networkName\": \"vcd-dmz-nw\",\n                            \"staticRoutes\": []\n                        }, {\n                            \"ipAddress\": \"{{vcd_cell_2_mgmt_ip}}\",\n                            \"networkName\": \"vcd-mgmt-nw\",\n                            \"staticRoutes\": []\n                        }\n                    ]\n                }\n            ]\n        }\n    ],\n    \"deploymentInfrastructures\": {\n        \"infra1\": {\n            \"vcenter\": {\n                \"vcenterName\": \"mgmt-vc\",\n                \"vcenterHost\": \"{{vcenter_hostname}}.{{domainName}}\",\n                \"vcenterUsername\": \"administrator@vsphere.local\",\n                \"vcenterPassword\": \"{{vc_password}}\",\n                \"datacenterName\": \"{{vc_datacenter}}\",\n                \"clusterName\": \"{{vc_cluster}}\",\n                \"resourcePool\": \"{{vc_res_pool}}\",\n                \"datastores\": [\n                    \"{{vc_datastore}}\"\n                ],\n                \"networks\": {\n                    \"vcd-dmz-nw\": {\n                        \"portGroupName\": \"{{vcd_dmz_portgroup}}\",\n                        \"gateway\": \"{{vcd_dmz_gateway}}\",\n                        \"subnetMask\": \"{{vcd_dmz_subnet}}\",\n                        \"domainName\": \"{{domainName}}\",\n                        \"searchPath\": [\n                            \"{{domainName}}\"\n                        ],\n                        \"useDhcp\": false,\n                        \"dns\": [\n                            \"{{dns}}\"\n                        ],\n                        \"ntp\": [\n                            \"{{ntp}}\"\n                        ]\n                    },\n                    \"vcd-mgmt-nw\": {\n                        \"portGroupName\": \"{{vcd_mgmt_nw_portgroup}}\",\n                        \"gateway\": \"{{vcd_mgmt_nw_gateway}}\",\n                        \"subnetMask\": \"{{vcd_mgmt_nw_subnet}}\",\n                        \"useDhcp\": false\n                    }\n                }\n            }\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "https://vcp-lcm-ip-address:port-number/api/api-version/lcm/environment?action=IMPORT",
+							"protocol": "https",
+							"host": [
+								"vcp-lcm-ip-address"
+							],
+							"port": "port-number",
+							"path": [
+								"api",
+								"api-version",
+								"lcm",
+								"environment"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "IMPORT"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Import env - VROPS Tenant App",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonResponse = pm.response.json();",
+									"var taskId = jsonResponse[\"taskId\"];",
+									"pm.collectionVariables.set(\"last_task_id\", taskId);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "cplcm",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "cplcm",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "JSESSIONID",
+								"type": "text",
+								"value": "{{JSESSIONID}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"environmentName\": \"{{vropsta_env_id}}\",\n    \"products\": [\n        {\n            \"productType\": \"VROPSTA\",\n            \"productId\": \"{{vropsta_product_id}}\",\n            \"version\": \"2.4.0\",\n            \"adminPassword\": \"{{password}}\",\n            \"integrations\": [\n                {\n                    \"integrationId\": \"vropsta-01-to-vrops-01\",\n                    \"datacenterComponentType\": \"VROPS\",\n                    \"hostname\": \"{{vrops_ip}}\",\n                    \"integrationUsername\": \"admin\",\n                    \"integrationPassword\": \"{{vrops_password}}\"\n                },\n                {\n                    \"integrationId\": \"vropsta-01-to-vcd-01\",\n                    \"productType\": \"VCD\",\n                    \"hostname\": \"{{vcd_lb_ip}}\",\n                    \"integrationUsername\": \"administrator@system\",\n                    \"integrationPassword\": \"{{password}}\",\n                    \"properties\": {\n                        \"amqp\": {\n                            \"amqpHost\": \"{{rmq_lb_ip}}\",\n                            \"amqpPort\": \"{{rmq_port_amqp_ssl}}\",\n                            \"amqpVHost\": \"/\",\n                            \"amqpUseSSL\": \"true\"\n                        },\n                        \"tenantAppProxy\": \"{{vropsta_proxy}}\",\n                        \"credentials\": {\n                            \"vcdAmqp\": {\n                                \"password\": \"{{password}}\"\n                            },\n                            \"tenantAppAmqp\": {\n                                \"username\": \"svc_vropsta\",\n                                \"password\": \"{{password}}\"\n                            }\n                        }\n                    }\n                }\n            ],\n            \"nodes\": [\n                {\n                    \"hostName\": \"{{vropsta_name}}.{{domainName}}\",\n                    \"vmName\": \"{{vropsta_name}}\",\n                    \"rootPassword\": \"{{password}}\",\n                    \"nics\": [\n                        {\n                            \"ipAddress\": \"{{vropsta_ip}}\",\n                            \"networkName\": \"vcd-dmz-nw\"\n                        }\n                    ]\n                }\n            ]\n        }\n    ],\n    \"deploymentInfrastructures\": {\n        \"infra1\": {\n            \"vcenter\": {\n                \"vcenterName\": \"mgmt-vc\",\n                \"vcenterHost\": \"{{vcenter_hostname}}.{{domainName}}\",\n                \"vcenterUsername\": \"administrator@vsphere.local\",\n                \"vcenterPassword\": \"{{vc_password}}\",\n                \"datacenterName\": \"{{vc_datacenter}}\",\n                \"clusterName\": \"{{vc_cluster}}\",\n                \"resourcePool\": \"{{vc_res_pool}}\",\n                \"datastores\": [\n                    \"{{vc_datastore}}\"\n                ],\n                \"networks\": {\n                    \"vcd-dmz-nw\": {\n                        \"portGroupName\": \"{{vcd_dmz_portgroup}}\",\n                        \"gateway\": \"{{vcd_dmz_gateway}}\",\n                        \"subnetMask\": \"{{vcd_dmz_subnet}}\",\n                        \"domainName\": \"{{domainName}}\",\n                        \"searchPath\": [\n                            \"{{domainName}}\"\n                        ],\n                        \"useDhcp\": false,\n                        \"dns\": [\n                            \"{{dns}}\"\n                        ],\n                        \"ntp\": [\n                            \"{{ntp}}\"\n                        ]\n                    }\n                }\n            }\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "https://vcp-lcm-ip-address:port-number/api/api-version/lcm/environment?action=IMPORT",
+							"protocol": "https",
+							"host": [
+								"vcp-lcm-ip-address"
+							],
+							"port": "port-number",
+							"path": [
+								"api",
+								"api-version",
+								"lcm",
+								"environment"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "IMPORT"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Import env - Usage Meter",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonResponse = pm.response.json();",
+									"var taskId = jsonResponse[\"taskId\"];",
+									"pm.collectionVariables.set(\"last_task_id\", taskId);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "cplcm",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "cplcm",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "JSESSIONID",
+								"type": "text",
+								"value": "{{JSESSIONID}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"environmentName\": \"{{um_env_id}}\",\n    \"products\": [\n        {\n            \"properties\": {\n                \"auditorPassword\": \"{{password}}\",\n                \"proxy\": {\n                    \"type\": \"none\"\n                }\n            },\n            \"productType\": \"USAGE\",\n            \"productId\": \"{{um_product_id}}\",\n            \"version\": \"um_version_number\",\n            \"adminPassword\": \"{{password}}\",\n            \"integrations\": [\n                {\n                    \"integrationId\": \"um-01-to-vc-01\",\n                    \"datacenterComponentType\": \"VCENTER\",\n                    \"hostname\": \"{{vcenter_hostname}}.{{domainName}}\",\n                    \"integrationUsername\": \"administrator@vsphere.local\",\n                    \"integrationPassword\": \"{{vc_password}}\",\n                    \"properties\": {\n                        \"externalSSO\": false,\n                        \"vcfEdition\": \"Enterprise\"\n                    }\n                },\n                {\n                    \"integrationId\": \"um-01-to-nsx-01\",\n                    \"datacenterComponentType\": \"NSXT\",\n                    \"hostname\": \"{{nsxt_hostname}}.{{domainName}}\",\n                    \"integrationUsername\": \"admin\",\n                    \"integrationPassword\": \"{{nsx_password}}\"\n                },\n                {\n                    \"integrationId\": \"um-01-to-vcd-01\",\n                    \"productType\": \"VCD\",\n                    \"hostname\": \"{{vcd_lb_ip}}\",\n                    \"integrationUsername\": \"administrator@system\",\n                    \"integrationPassword\": \"{{password}}\"\n                },\n                {\n                    \"integrationId\": \"um-01-to-vrops-01\",\n                    \"datacenterComponentType\": \"VROPS\",\n                    \"hostname\": \"{{vrops_ip}}\",\n                    \"integrationUsername\": \"admin\",\n                    \"integrationPassword\": \"{{vrops_password}}\",\n                    \"properties\": {\n                        \"vcReferences\": [\"um-01-to-vc-01\"],\n                        \"enableAutodiscovery\": false\n                    }\n                }\n            ],\n            \"nodes\": [\n                {\n                    \"hostName\": \"{{usage_meter_name}}.{{domainName}}\",\n                    \"vmName\": \"{{usage_meter_name}}\",\n                    \"rootPassword\": \"{{password}}\",\n                    \"nics\": [\n                        {\n                            \"ipAddress\": \"{{usage_meter_ip}}\",\n                            \"networkName\": \"mgmt-nw\"\n                        }\n                    ]\n                }\n            ]\n        }\n    ],\n    \"deploymentInfrastructures\": {\n        \"infra1\": {\n            \"vcenter\": {\n                \"vcenterName\": \"mgmt-vc\",\n                \"vcenterHost\": \"{{vcenter_hostname}}.{{domainName}}\",\n                \"vcenterUsername\": \"administrator@vsphere.local\",\n                \"vcenterPassword\": \"{{vc_password}}\",\n                \"datacenterName\": \"{{vc_datacenter}}\",\n                \"clusterName\": \"{{vc_cluster}}\",\n                \"resourcePool\": \"{{vc_res_pool}}\",\n                \"datastores\": [\n                    \"{{vc_datastore}}\"\n                ],\n                \"networks\": {\n                    \"mgmt-nw\": {\n                        \"portGroupName\": \"{{mgmt_nw_portgroup}}\",\n                        \"gateway\": \"{{mgmt_nw_gateway}}\",\n                        \"subnetMask\": \"{{mgmt_nw_subnet}}\",\n                        \"domainName\": \"{{domainName}}\",\n                        \"searchPath\": [\n                            \"{{domainName}}\"\n                        ],\n                        \"useDhcp\": false,\n                        \"dns\": [\n                            \"{{dns}}\"\n                        ],\n                        \"ntp\": [\n                            \"{{ntp}}\"\n                        ]\n                    }\n                }\n            }\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "https://vcp-lcm-ip-address:port-number/api/api-version/lcm/environment?action=IMPORT",
+							"protocol": "https",
+							"host": [
+								"vcp-lcm-ip-address"
+							],
+							"port": "port-number",
+							"path": [
+								"api",
+								"api-version",
+								"lcm",
+								"environment"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "IMPORT"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Import env - RabbitMQ",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonResponse = pm.response.json();",
+									"var taskId = jsonResponse[\"taskId\"];",
+									"pm.collectionVariables.set(\"last_task_id\", taskId);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "cplcm",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "cplcm",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "JSESSIONID",
+								"type": "text",
+								"value": "{{JSESSIONID}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"environmentName\": \"{{rmq_env_id}}\",\n    \"products\": [\n        {\n            \"productType\": \"RMQ\",\n            \"productId\": \"{{rmq_product_id}}\",\n            \"version\": \"Rabbitmq_version_number\",\n            \"adminPassword\": \"{{password}}\",\n            \"properties\": {\n                \"lbName\": \"{{rmq_lb_name}}\",\n                \"lbFqdn\": \"{{rmq_lb_name}}.{{domainName}}\",\n                \"lbIp\": \"{{rmq_lb_ip}}\",\n                \"portAmqpSsl\": \"{{rmq_port_amqp_ssl}}\",\n                \"portRmqMgmt\": \"{{rmq_port_mgmt}}\",\n                \"users\": [\n                    {\n                        \"username\": \"user_name\",\n                        \"password\": \"{{password}}\"\n                    },\n                    {\n                        \"username\": \"svc_vropsta\",\n                        \"password\": \"{{password}}\"\n                    }\n                ]\n            }, \n            \"nodes\": [\n                {\n                    \"hostName\": \"{{rmq_01_name}}.{{domainName}}\",\n                    \"vmName\": \"{{rmq_01_name}}\",\n                    \"rootPassword\": \"{{password}}\",\n                    \"cpuNum\": \"2\",\n                    \"ramMemory\": \"4096\",\n                    \"nics\": [\n                        {\n                            \"ipAddress\": \"{{rmq_01_ip}}\",\n                            \"networkName\": \"mgmt-nw\"\n                        }\n                    ]\n                },\n                {\n                    \"hostName\": \"{{rmq_02_name}}.{{domainName}}\",\n                    \"vmName\": \"{{rmq_02_name}}\",\n                    \"rootPassword\": \"{{password}}\",\n                    \"cpuNum\": \"2\",\n                    \"ramMemory\": \"4096\",\n                    \"nics\": [\n                        {\n                            \"ipAddress\": \"{{rmq_02_ip}}\",\n                            \"networkName\": \"mgmt-nw\"\n                        }\n                    ]\n                }\n            ]\n        }\n    ],\n    \"deploymentInfrastructures\": {\n        \"infra1\": {\n            \"vcenter\": {\n                \"vcenterName\": \"mgmt-vc\",\n                \"vcenterHost\": \"{{vcenter_hostname}}.{{domainName}}\",\n                \"vcenterUsername\": \"administrator@vsphere.local\",\n                \"vcenterPassword\": \"{{vc_password}}\",\n                \"datacenterName\": \"{{vc_datacenter}}\",\n                \"clusterName\": \"{{vc_cluster}}\",\n                \"resourcePool\": \"{{vc_res_pool}}\",\n                \"datastores\": [\n                    \"{{vc_datastore}}\"\n                ],\n                \"networks\": {\n                    \"mgmt-nw\": {\n                        \"portGroupName\": \"{{mgmt_nw_portgroup}}\",\n                        \"gateway\": \"{{mgmt_nw_gateway}}\",\n                        \"subnetMask\": \"{{mgmt_nw_subnet}}\",\n                        \"domainName\": \"{{domainName}}\",\n                        \"searchPath\": [\n                            \"{{domainName}}\"\n                        ],\n                        \"useDhcp\": false,\n                        \"dns\": [\n                            \"{{dns}}\"\n                        ],\n                        \"ntp\": [\n                            \"{{ntp}}\"\n                        ]\n                    }\n                }\n            }\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "https://vcp-lcm-ip-address:port-number/api/api_version/lcm/environment?action=IMPORT",
+							"protocol": "https",
+							"host": [
+								"vcp-lcm-ip-address"
+							],
+							"port": "port-number",
+							"path": [
+								"api",
+								"api_version",
+								"lcm",
+								"environment"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "IMPORT"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Upgrade",
+			"item": [
+				{
+					"name": "Upgrade VCD",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonResponse = pm.response.json();",
+									"var taskId = jsonResponse[\"taskId\"];",
+									"pm.collectionVariables.set(\"last_task_id\", taskId);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "cplcm",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "cplcm",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "JSESSIONID",
+								"type": "text",
+								"value": "{{JSESSIONID}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"upgradeDetails\": {\n        \"targetVersion\": \"target-version-number\",\n        \"additionalProperties\": {\n            \"keepBackup\": true\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "https://vcp-lcm-ip-address:port-number/api/api-version/lcm/environment{{product-environment-id}}/product/{{product-id}}/upgrade?action=UPGRADE",
+							"protocol": "https",
+							"host": [
+								"vcp-lcm-ip-address"
+							],
+							"port": "port-number",
+							"path": [
+								"api",
+								"api-version",
+								"lcm",
+								"environment{{product-environment-id}}",
+								"product",
+								"{{product-id}}",
+								"upgrade"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "UPGRADE"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Upgrade Usage Meter",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonResponse = pm.response.json();",
+									"var taskId = jsonResponse[\"taskId\"];",
+									"pm.collectionVariables.set(\"last_task_id\", taskId);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "cplcm",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "cplcm",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "JSESSIONID",
+								"type": "text",
+								"value": "{{JSESSIONID}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"upgradeDetails\": {\n        \"targetVersion\": \"target-version-number\",\n        \"additionalProperties\": {\n            \"keepBackup\": true\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "https://vcp-lcm-ip-address:port-number/api/api-version/lcm/environment{{product-environment-id}}/product/{{product-id}}/upgrade?action=UPGRADE",
+							"protocol": "https",
+							"host": [
+								"vcp-lcm-ip-address"
+							],
+							"port": "port-number",
+							"path": [
+								"api",
+								"api-version",
+								"lcm",
+								"environment{{product-environment-id}}",
+								"product",
+								"{{product-id}}",
+								"upgrade"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "UPGRADE"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Upgrade vROPS TA",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonResponse = pm.response.json();",
+									"var taskId = jsonResponse[\"taskId\"];",
+									"pm.collectionVariables.set(\"last_task_id\", taskId);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "cplcm",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "cplcm",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "JSESSIONID",
+								"type": "text",
+								"value": "{{JSESSIONID}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"upgradeDetails\": {\n        \"targetVersion\": \"target-version-number\",\n        \"additionalProperties\": {\n            \"keepBackup\": true\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "https://vcp-lcm-ip-address:port-number/api/api-version/lcm/environment{{product-environment-id}}/product/{{product-id}}/upgrade?action=UPGRADE",
+							"protocol": "https",
+							"host": [
+								"vcp-lcm-ip-address"
+							],
+							"port": "port-number",
+							"path": [
+								"api",
+								"api-version",
+								"lcm",
+								"environment{{product-environment-id}}",
+								"product",
+								"{{product-id}}",
+								"upgrade"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "UPGRADE"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Manage certificates",
+			"item": [
+				{
+					"name": "Get certificate VCD",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "cplcm",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "cplcm",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "JSESSIONID",
+								"type": "text",
+								"value": "{{JSESSIONID}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "https://vcp-lcm-ip-address:port-number/api/api-version/lcm/environmentvcd-environment-id/product/vcd-product-id/certificate",
+							"protocol": "https",
+							"host": [
+								"vcp-lcm-ip-address"
+							],
+							"port": "port-number",
+							"path": [
+								"api",
+								"api-version",
+								"lcm",
+								"environmentvcd-environment-id",
+								"product",
+								"vcd-product-id",
+								"certificate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update certificate VCD",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonResponse = pm.response.json();",
+									"var taskId = jsonResponse[\"taskId\"];",
+									"pm.collectionVariables.set(\"last_task_id\", taskId);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "cplcm",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "cplcm",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "JSESSIONID",
+								"type": "text",
+								"value": "{{JSESSIONID}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"product\": {\n        \"certificate\": \"vcd-certificate\",\n        \"privateKey\": \"vcd-certificate-key\"\n    },\n    \"management\": {\n        \"certificate\": \"vcd-certificate\",\n        \"privateKey\": \"vcd-certificate-key\"\n    },\n    \"restApi\": {\n        \"certificate\": \"vcd-certificate\"\n    },\n    \"tenantPortal\": {\n        \"certificate\": \"vcd-certificate\"\n    }\n}"
+						},
+						"url": {
+							"raw": "https://vcp-lcm-ip-address:port-number/api/api-version/lcm/environmentvcd-environment-id/product/vcd-product-id/certificate",
+							"protocol": "https",
+							"host": [
+								"vcp-lcm-ip-address"
+							],
+							"port": "port-number",
+							"path": [
+								"api",
+								"api-version",
+								"lcm",
+								"environmentvcd-environment-id",
+								"product",
+								"vcd-product-id",
+								"certificate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get certificate Usage Meter",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "cplcm",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "cplcm",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "JSESSIONID",
+								"type": "text",
+								"value": "{{JSESSIONID}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "https://vcp-lcm-ip-address:port-number/api/api-version/lcm/environmentum-environment-id/product/um-product-id/certificate",
+							"protocol": "https",
+							"host": [
+								"vcp-lcm-ip-address"
+							],
+							"port": "port-number",
+							"path": [
+								"api",
+								"api-version",
+								"lcm",
+								"environmentum-environment-id",
+								"product",
+								"um-product-id",
+								"certificate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update certificate Usage Meter",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonResponse = pm.response.json();",
+									"var taskId = jsonResponse[\"taskId\"];",
+									"pm.collectionVariables.set(\"last_task_id\", taskId);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "cplcm",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "cplcm",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "JSESSIONID",
+								"type": "text",
+								"value": "{{JSESSIONID}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"product\": {\n        \"certificate\": \"um-certificate\",\n        \"privateKey\": \"um-certificate-key\"\n    }\n}"
+						},
+						"url": {
+							"raw": "https://vcp-lcm-ip-address:port-number/api/api-version/lcm/environmentum-env-id/product/um-product-id/certificate",
+							"protocol": "https",
+							"host": [
+								"vcp-lcm-ip-address"
+							],
+							"port": "port-number",
+							"path": [
+								"api",
+								"api-version",
+								"lcm",
+								"environmentum-env-id",
+								"product",
+								"um-product-id",
+								"certificate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get certificate vROPS TA",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "cplcm",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "cplcm",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "JSESSIONID",
+								"type": "text",
+								"value": "{{JSESSIONID}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "https://vcp-lcm-ip-address:port-number/api/api-version/lcm/environment/vropsta-environment-id/product/vropsta-product-id/certificate",
+							"protocol": "https",
+							"host": [
+								"vcp-lcm-ip-address"
+							],
+							"port": "port-number",
+							"path": [
+								"api",
+								"api-version",
+								"lcm",
+								"environment",
+								"vropsta-environment-id",
+								"product",
+								"vropsta-product-id",
+								"certificate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update certificate vROPS TA",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonResponse = pm.response.json();",
+									"var taskId = jsonResponse[\"taskId\"];",
+									"pm.collectionVariables.set(\"last_task_id\", taskId);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "cplcm",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "cplcm",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "JSESSIONID",
+								"type": "text",
+								"value": "{{JSESSIONID}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"product\": {\n        \"certificate\": \"vropsta-certificate\",\n        \"privateKey\": \"vropsta-certificate-key\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://vcp-lcm-ip-address:port-number/api/api-version/lcm/environment/vropsta-environment-id/product/vropsta-product-id/certificate",
+							"protocol": "https",
+							"host": [
+								"vcp-lcm-ip-address"
+							],
+							"port": "port-number",
+							"path": [
+								"api",
+								"api-version",
+								"lcm",
+								"environment",
+								"vropsta-environment-id",
+								"product",
+								"vropsta-product-id",
+								"certificate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get certificate RabbitMQ",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "cplcm",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "cplcm",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "JSESSIONID",
+								"type": "text",
+								"value": "{{JSESSIONID}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "https://vcp-lcm-ip-address:port-number/api/api-version/lcm/environment/rmq-environment-id/product/rmq-product-id/certificate",
+							"protocol": "https",
+							"host": [
+								"vcp-lcm-ip-address"
+							],
+							"port": "port-number",
+							"path": [
+								"api",
+								"api-version",
+								"lcm",
+								"environment",
+								"rmq-environment-id",
+								"product",
+								"rmq-product-id",
+								"certificate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update certificate RabbitMQ",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonResponse = pm.response.json();",
+									"var taskId = jsonResponse[\"taskId\"];",
+									"pm.collectionVariables.set(\"last_task_id\", taskId);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "cplcm",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "cplcm",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "JSESSIONID",
+								"type": "text",
+								"value": "{{JSESSIONID}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"product\": {\n        \"certificate\": \"rmq-certificate\",\n        \"privateKey\": \"rmq-certificate-key\"\n    }\n}"
+						},
+						"url": {
+							"raw": "https://vcp-lcm-ip-address:port-number/api/api-version/lcm/environment/rmq-environment-id/product/rmq-product-id/certificate",
+							"protocol": "https",
+							"host": [
+								"vcp-lcm-ip-address"
+							],
+							"port": "port-number",
+							"path": [
+								"api",
+								"api-version",
+								"lcm",
+								"environment",
+								"rmq-environment-id",
+								"product",
+								"rmq-product-id",
+								"certificate"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Manage Instances",
+			"item": [
+				{
+					"name": "VCD",
+					"item": [
+						{
+							"name": "Get all VCD nodes",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "basic",
+									"basic": [
+										{
+											"key": "password",
+											"value": "cplcm",
+											"type": "string"
+										},
+										{
+											"key": "username",
+											"value": "cplcm",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Content-Type",
+										"type": "text",
+										"value": "application/json"
+									},
+									{
+										"key": "JSESSIONID",
+										"type": "text",
+										"value": "{{JSESSIONID}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "https://vcp-lcm-ip-address:port-number/api/v1/lcm/environment/vcd-environment-id/product/vcd-product-id/node",
+									"protocol": "https",
+									"host": [
+										"vcp-lcm-ip-address"
+									],
+									"port": "port-number",
+									"path": [
+										"api",
+										"v1",
+										"lcm",
+										"environment",
+										"vcd-environment-id",
+										"product",
+										"vcd-product-id",
+										"node"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get single VCD node",
+							"request": {
+								"auth": {
+									"type": "basic",
+									"basic": [
+										{
+											"key": "password",
+											"value": "cplcm",
+											"type": "string"
+										},
+										{
+											"key": "username",
+											"value": "cplcm",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Content-Type",
+										"type": "text",
+										"value": "application/json"
+									},
+									{
+										"key": "JSESSIONID",
+										"type": "text",
+										"value": "{{JSESSIONID}}"
+									}
+								],
+								"url": {
+									"raw": "https://vcp-lcm-ip-address:port-number/api/v1/lcm/environment/vcd-environment-id/product/vcd-product-id/node/vcd-node-number",
+									"protocol": "https",
+									"host": [
+										"vcp-lcm-ip-address"
+									],
+									"port": "port-number",
+									"path": [
+										"api",
+										"v1",
+										"lcm",
+										"environment",
+										"vcd-environment-id",
+										"product",
+										"vcd-product-id",
+										"node",
+										"vcd-node-number"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Add node - VCD",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonResponse = pm.response.json();\r",
+											"var taskId = jsonResponse[\"taskId\"];\r",
+											"pm.collectionVariables.set(\"last_task_id\", taskId);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "basic",
+									"basic": [
+										{
+											"key": "password",
+											"value": "cplcm",
+											"type": "string"
+										},
+										{
+											"key": "username",
+											"value": "cplcm",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									},
+									{
+										"key": "JSESSIONID",
+										"value": "{{JSESSIONID}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"hostName\": \"{{vcd_cell_number_name}}.{{domainName}}\",\n    \"vmName\": \"{{vcd_cell_number_name}}\",\n    \"rootPassword\": \"{{password}}\",\n    \"gateway\": \"{{vcd_mgmt_nw_gateway}}\",\n    \"nics\": [\n        {\n            \"ipAddress\": \"{{vcd_cell_number_ip}}\",\n            \"networkName\": \"vcd-dmz-nw\",\n            \"staticRoutes\": []\n        }, {\n            \"ipAddress\": \"{{vcd_cell_number_mgmt_ip}}\",\n            \"networkName\": \"vcd-mgmt-nw\",\n            \"staticRoutes\": []\n        }\n    ]\n}"
+								},
+								"url": {
+									"raw": "https://vcp-lcm-ip-address:port-number/api/api_version/lcm/environment/vcd-environment-id/product/vcd-product-id/node",
+									"protocol": "https",
+									"host": [
+										"vcp-lcm-ip-address"
+									],
+									"port": "port-number",
+									"path": [
+										"api",
+										"api_version",
+										"lcm",
+										"environment",
+										"vcd-environment-id",
+										"product",
+										"vcd-product-id",
+										"node"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update node - VCD",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonResponse = pm.response.json();\r",
+											"var taskId = jsonResponse[\"taskId\"];\r",
+											"pm.collectionVariables.set(\"last_task_id\", taskId);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "basic",
+									"basic": [
+										{
+											"key": "password",
+											"value": "cplcm",
+											"type": "string"
+										},
+										{
+											"key": "username",
+											"value": "cplcm",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"type": "text",
+										"value": "application/json"
+									},
+									{
+										"key": "JSESSIONID",
+										"type": "text",
+										"value": "{{JSESSIONID}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"rootPassword\": \"new-password\",\n    \"cpuNum\": value-cpu,\n    \"ramMemory\": value-ram\n}"
+								},
+								"url": {
+									"raw": "https://vcp-lcm-ip-address:port-number/api/v1/lcm/environment/vcd-environment-id/product/vcd-product-id/node/vcd-node-number",
+									"protocol": "https",
+									"host": [
+										"vcp-lcm-ip-address"
+									],
+									"port": "port-number",
+									"path": [
+										"api",
+										"v1",
+										"lcm",
+										"environment",
+										"vcd-environment-id",
+										"product",
+										"vcd-product-id",
+										"node",
+										"vcd-node-number"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Redeploy node - VCD",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonResponse = pm.response.json();\r",
+											"var taskId = jsonResponse[\"taskId\"];\r",
+											"pm.collectionVariables.set(\"last_task_id\", taskId);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "basic",
+									"basic": [
+										{
+											"key": "password",
+											"value": "cplcm",
+											"type": "string"
+										},
+										{
+											"key": "username",
+											"value": "cplcm",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"type": "text",
+										"value": "application/json"
+									},
+									{
+										"key": "JSESSIONID",
+										"type": "text",
+										"value": "{{JSESSIONID}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"hostName\": \"{{vcd_cell_vcd-cell-number_name}}.{{domainName}}\",\n    \"vmName\": \"vcd_cell_3_name\",\n    \"rootPassword\": \"{{password}}\",\n    \"gateway\": \"{{vcd_mgmt_nw_gateway}}\",\n    \"nics\": [\n        {\n            \"ipAddress\": \"{{vcd_cell_3_ip}}\",\n            \"networkName\": \"vcd-dmz-nw\",\n            \"staticRoutes\": []\n        }, {\n            \"ipAddress\": \"{{vcd_cell_3_mgmt_ip}}\",\n            \"networkName\": \"vcd-mgmt-nw\",\n            \"staticRoutes\": []\n        }\n    ]\n}"
+								},
+								"url": {
+									"raw": "https://vcp-lcm-ip-address:port-number/api/v1/lcm/environment/vcd-environment-id/product/vcd-product-id/node/vcd-node-number",
+									"protocol": "https",
+									"host": [
+										"vcp-lcm-ip-address"
+									],
+									"port": "port-number",
+									"path": [
+										"api",
+										"v1",
+										"lcm",
+										"environment",
+										"vcd-environment-id",
+										"product",
+										"vcd-product-id",
+										"node",
+										"vcd-node-number"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete node - VCD",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonResponse = pm.response.json();\r",
+											"var taskId = jsonResponse[\"taskId\"];\r",
+											"pm.collectionVariables.set(\"last_task_id\", taskId);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "basic",
+									"basic": [
+										{
+											"key": "password",
+											"value": "cplcm",
+											"type": "string"
+										},
+										{
+											"key": "username",
+											"value": "cplcm",
+											"type": "string"
+										}
+									]
+								},
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Content-Type",
+										"type": "text",
+										"value": "application/json"
+									},
+									{
+										"key": "JSESSIONID",
+										"type": "text",
+										"value": "{{JSESSIONID}}"
+									}
+								],
+								"url": {
+									"raw": "https://vcp-lcm-ip-address:port-number/api/v1/lcm/environment/vcd-env-id/product/vcd-product-id/node/vcd-node-number?force=false",
+									"protocol": "https",
+									"host": [
+										"vcp-lcm-ip-address"
+									],
+									"port": "port-number",
+									"path": [
+										"api",
+										"v1",
+										"lcm",
+										"environment",
+										"vcd-env-id",
+										"product",
+										"vcd-product-id",
+										"node",
+										"vcd-node-number"
+									],
+									"query": [
+										{
+											"key": "force",
+											"value": "false"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "UM",
+					"item": [
+						{
+							"name": "Get all Usage Meter nodes",
+							"request": {
+								"auth": {
+									"type": "basic",
+									"basic": [
+										{
+											"key": "password",
+											"value": "cplcm",
+											"type": "string"
+										},
+										{
+											"key": "username",
+											"value": "cplcm",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Content-Type",
+										"type": "text",
+										"value": "application/json"
+									},
+									{
+										"key": "JSESSIONID",
+										"type": "text",
+										"value": "{{JSESSIONID}}"
+									}
+								],
+								"url": {
+									"raw": "https://vcp-lcm-ip-address:port-number/api/v1/lcm/environment/um-environment-id/product/um-product-id/node",
+									"protocol": "https",
+									"host": [
+										"vcp-lcm-ip-address"
+									],
+									"port": "port-number",
+									"path": [
+										"api",
+										"v1",
+										"lcm",
+										"environment",
+										"um-environment-id",
+										"product",
+										"um-product-id",
+										"node"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get single Usage Meter node",
+							"request": {
+								"auth": {
+									"type": "basic",
+									"basic": [
+										{
+											"key": "password",
+											"value": "cplcm",
+											"type": "string"
+										},
+										{
+											"key": "username",
+											"value": "cplcm",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Content-Type",
+										"type": "text",
+										"value": "application/json"
+									},
+									{
+										"key": "JSESSIONID",
+										"type": "text",
+										"value": "{{JSESSIONID}}"
+									}
+								],
+								"url": {
+									"raw": "https://vcp-lcm-ip-address:port-number/api/v1/lcm/environment/um-environment-id/product/um-product-id/node/um-node-id",
+									"protocol": "https",
+									"host": [
+										"vcp-lcm-ip-address"
+									],
+									"port": "port-number",
+									"path": [
+										"api",
+										"v1",
+										"lcm",
+										"environment",
+										"um-environment-id",
+										"product",
+										"um-product-id",
+										"node",
+										"um-node-id"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update Usage Meter node",
+							"request": {
+								"auth": {
+									"type": "basic",
+									"basic": [
+										{
+											"key": "password",
+											"value": "cplcm",
+											"type": "string"
+										},
+										{
+											"key": "username",
+											"value": "cplcm",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"type": "text",
+										"value": "application/json"
+									},
+									{
+										"key": "JSESSIONID",
+										"type": "text",
+										"value": "{{JSESSIONID}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"rootPassword\": \"updated_password\",\r\n    \"cpuNum\": value-cpu,\r\n    \"ramMemory\": value-ram\r\n}"
+								},
+								"url": {
+									"raw": "https://vcp-lcm-ip-address:port-number/api/v1/lcm/environment/um-environment-id/product/um-product-id/node",
+									"protocol": "https",
+									"host": [
+										"vcp-lcm-ip-address"
+									],
+									"port": "port-number",
+									"path": [
+										"api",
+										"v1",
+										"lcm",
+										"environment",
+										"um-environment-id",
+										"product",
+										"um-product-id",
+										"node"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "vROPS TA",
+					"item": [
+						{
+							"name": "Get all vROPS TA nodes",
+							"request": {
+								"auth": {
+									"type": "basic",
+									"basic": [
+										{
+											"key": "password",
+											"value": "cplcm",
+											"type": "string"
+										},
+										{
+											"key": "username",
+											"value": "cplcm",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Content-Type",
+										"type": "text",
+										"value": "application/json"
+									},
+									{
+										"key": "JSESSIONID",
+										"type": "text",
+										"value": "{{JSESSIONID}}"
+									}
+								],
+								"url": {
+									"raw": "https://vcp-lcm-ip-address:port-number/api/v1/lcm/environment/vropsta-environment-id/product/vropsta-product-id/node",
+									"protocol": "https",
+									"host": [
+										"vcp-lcm-ip-address"
+									],
+									"port": "port-number",
+									"path": [
+										"api",
+										"v1",
+										"lcm",
+										"environment",
+										"vropsta-environment-id",
+										"product",
+										"vropsta-product-id",
+										"node"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get single vROPS TA node",
+							"request": {
+								"auth": {
+									"type": "basic",
+									"basic": [
+										{
+											"key": "password",
+											"value": "cplcm",
+											"type": "string"
+										},
+										{
+											"key": "username",
+											"value": "cplcm",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Content-Type",
+										"type": "text",
+										"value": "application/json"
+									},
+									{
+										"key": "JSESSIONID",
+										"type": "text",
+										"value": "{{JSESSIONID}}"
+									}
+								],
+								"url": {
+									"raw": "https://vcp-lcm-ip-address:port-number/api/v1/lcm/environment/vropsta-environment-id/product/vropsta-product-id/node/node-id",
+									"protocol": "https",
+									"host": [
+										"vcp-lcm-ip-address"
+									],
+									"port": "port-number",
+									"path": [
+										"api",
+										"v1",
+										"lcm",
+										"environment",
+										"vropsta-environment-id",
+										"product",
+										"vropsta-product-id",
+										"node",
+										"node-id"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update vROPS TA node",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonResponse = pm.response.json();\r",
+											"var taskId = jsonResponse[\"taskId\"];\r",
+											"pm.collectionVariables.set(\"last_task_id\", taskId);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "basic",
+									"basic": [
+										{
+											"key": "password",
+											"value": "cplcm",
+											"type": "string"
+										},
+										{
+											"key": "username",
+											"value": "cplcm",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"type": "text",
+										"value": "application/json"
+									},
+									{
+										"key": "JSESSIONID",
+										"type": "text",
+										"value": "{{JSESSIONID}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"rootPassword\": \"updated_password\",\n    \"cpuNum\": value-cpu,\n    \"ramMemory\": value-ram\n}"
+								},
+								"url": {
+									"raw": "https://vcp-lcm-ip-address:port-number/api/v1/lcm/environment/vropsta-env-id/product/vropsta-product-id/node",
+									"protocol": "https",
+									"host": [
+										"vcp-lcm-ip-address"
+									],
+									"port": "port-number",
+									"path": [
+										"api",
+										"v1",
+										"lcm",
+										"environment",
+										"vropsta-env-id",
+										"product",
+										"vropsta-product-id",
+										"node"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "RabbitMQ",
+					"item": [
+						{
+							"name": "Get all RMQ nodes",
+							"request": {
+								"auth": {
+									"type": "basic",
+									"basic": [
+										{
+											"key": "password",
+											"value": "cplcm",
+											"type": "string"
+										},
+										{
+											"key": "username",
+											"value": "cplcm",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Content-Type",
+										"type": "text",
+										"value": "application/json"
+									},
+									{
+										"key": "JSESSIONID",
+										"type": "text",
+										"value": "{{JSESSIONID}}"
+									}
+								],
+								"url": {
+									"raw": "https://vcp-lcm-ip-address:port-number/api/v1/lcm/environment/rmq-env-id/product/rmq-product-id/node",
+									"protocol": "https",
+									"host": [
+										"vcp-lcm-ip-address"
+									],
+									"port": "port-number",
+									"path": [
+										"api",
+										"v1",
+										"lcm",
+										"environment",
+										"rmq-env-id",
+										"product",
+										"rmq-product-id",
+										"node"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Add RMQ node",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonResponse = pm.response.json();\r",
+											"var taskId = jsonResponse[\"taskId\"];\r",
+											"pm.collectionVariables.set(\"last_task_id\", taskId);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "basic",
+									"basic": [
+										{
+											"key": "password",
+											"value": "cplcm",
+											"type": "string"
+										},
+										{
+											"key": "username",
+											"value": "cplcm",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									},
+									{
+										"key": "JSESSIONID",
+										"value": "{{JSESSIONID}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"hostName\": \"rmq-node-name.domainName\",\n    \"vmName\": \"vm-name\",\n    \"rootPassword\": \"password\",\n    \"cpuNum\": \"value-cpu\",\n    \"ramMemory\": \"value-ram\",\n    \"nics\": [\n        {\n            \"ipAddress\": \"rmq-node-ip-address\",\n            \"networkName\": \"nw-name\"\n        }\n    ]\n}"
+								},
+								"url": {
+									"raw": "https://vcp-lcm-ip-address:port-number/api/v1/lcm/environment/rmq-env-id/product/rmq-product-id/node",
+									"protocol": "https",
+									"host": [
+										"vcp-lcm-ip-address"
+									],
+									"port": "port-number",
+									"path": [
+										"api",
+										"v1",
+										"lcm",
+										"environment",
+										"rmq-env-id",
+										"product",
+										"rmq-product-id",
+										"node"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update RMQ node",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonResponse = pm.response.json();\r",
+											"var taskId = jsonResponse[\"taskId\"];\r",
+											"pm.collectionVariables.set(\"last_task_id\", taskId);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "basic",
+									"basic": [
+										{
+											"key": "password",
+											"value": "cplcm",
+											"type": "string"
+										},
+										{
+											"key": "username",
+											"value": "cplcm",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"type": "text",
+										"value": "application/json"
+									},
+									{
+										"key": "JSESSIONID",
+										"type": "text",
+										"value": "{{JSESSIONID}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"rootPassword\": \"updated_password\",\n    \"cpuNum\": value-cpu,\n    \"ramMemory\": value-ram}"
+								},
+								"url": {
+									"raw": "https://vcp-lcm-ip-address:port-number/api/v1/lcm/environment/rmq-env-id/product/rmq-product-id/node/node-number",
+									"protocol": "https",
+									"host": [
+										"vcp-lcm-ip-address"
+									],
+									"port": "port-number",
+									"path": [
+										"api",
+										"v1",
+										"lcm",
+										"environment",
+										"rmq-env-id",
+										"product",
+										"rmq-product-id",
+										"node",
+										"node-number"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Redeploy RMQ node",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonResponse = pm.response.json();\r",
+											"var taskId = jsonResponse[\"taskId\"];\r",
+											"pm.collectionVariables.set(\"last_task_id\", taskId);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "basic",
+									"basic": [
+										{
+											"key": "password",
+											"value": "cplcm",
+											"type": "string"
+										},
+										{
+											"key": "username",
+											"value": "cplcm",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"type": "text",
+										"value": "application/json"
+									},
+									{
+										"key": "JSESSIONID",
+										"type": "text",
+										"value": "{{JSESSIONID}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"hostName\": \"rmq-node-name.domainName\",\n    \"vmName\": \"vm-name\",\n    \"rootPassword\": \"password\",\n    \"cpuNum\": \"value-cpu\",\n    \"ramMemory\": \"value-ram\",\n    \"nics\": [\n        {\n            \"ipAddress\": \"rmq-node-ip-address\",\n            \"networkName\": \"nw-name\"\n        }\n    ]\n}"
+								},
+								"url": {
+									"raw": "https://vcp-lcm-ip-address:port-number/api/v1/lcm/environment/rmq-environment-id/product/rmq-product-id/node/node-number",
+									"protocol": "https",
+									"host": [
+										"vcp-lcm-ip-address"
+									],
+									"port": "port-number",
+									"path": [
+										"api",
+										"v1",
+										"lcm",
+										"environment",
+										"rmq-environment-id",
+										"product",
+										"rmq-product-id",
+										"node",
+										"node-number"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete RMQ node",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonResponse = pm.response.json();\r",
+											"var taskId = jsonResponse[\"taskId\"];\r",
+											"pm.collectionVariables.set(\"last_task_id\", taskId);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "basic",
+									"basic": [
+										{
+											"key": "password",
+											"value": "cplcm",
+											"type": "string"
+										},
+										{
+											"key": "username",
+											"value": "cplcm",
+											"type": "string"
+										}
+									]
+								},
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Content-Type",
+										"type": "text",
+										"value": "application/json"
+									},
+									{
+										"key": "JSESSIONID",
+										"type": "text",
+										"value": "{{JSESSIONID}}"
+									}
+								],
+								"url": {
+									"raw": "https://vcp-lcm-ip-address:port-number/api/v1/lcm/environment/rmq-environment-id/product/rmq-product-id/node?force=false",
+									"protocol": "https",
+									"host": [
+										"vcp-lcm-ip-address"
+									],
+									"port": "port-number",
+									"path": [
+										"api",
+										"v1",
+										"lcm",
+										"environment",
+										"rmq-environment-id",
+										"product",
+										"rmq-product-id",
+										"node"
+									],
+									"query": [
+										{
+											"key": "force",
+											"value": "false"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Misc",
+			"item": [
+				{
+					"name": "Get LCM environments",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "JSESSIONID",
+								"value": "{{JSESSIONID}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "https://{{host}}:{{port}}/api/v1/lcm/environment",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"api",
+								"v1",
+								"lcm",
+								"environment"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get about",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "JSESSIONID",
+								"value": "{{JSESSIONID}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "https://{{host}}:{{port}}/api/about",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"api",
+								"about"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Task",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "JSESSIONID",
+								"value": "{{JSESSIONID}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "https://{{host}}:{{port}}/api/v1/task/{{last_task_id}}",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"api",
+								"v1",
+								"task",
+								"{{last_task_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Task",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "JSESSIONID",
+								"type": "text",
+								"value": "{{JSESSIONID}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "https://{{host}}:{{port}}/api/v1/task/{{last_task_id}}?action=cancel",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"api",
+								"v1",
+								"task",
+								"{{last_task_id}}"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "cancel"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "host",
+			"value": "localhost"
+		},
+		{
+			"key": "port",
+			"value": "9443"
+		},
+		{
+			"key": "JSESSIONID",
+			"value": ""
+		},
+		{
+			"key": "password",
+			"value": ""
+		},
+		{
+			"key": "vc_password",
+			"value": ""
+		},
+		{
+			"key": "nsx_password",
+			"value": ""
+		},
+		{
+			"key": "vrops_password",
+			"value": ""
+		},
+		{
+			"key": "updated_password",
+			"value": ""
+		},
+		{
+			"key": "dns",
+			"value": "192.168.101.8"
+		},
+		{
+			"key": "ntp",
+			"value": "time.vmware.com"
+		},
+		{
+			"key": "vcd_dmz_portgroup",
+			"value": "VCD-DMZ"
+		},
+		{
+			"key": "vcd_dmz_gateway",
+			"value": "192.168.13.1"
+		},
+		{
+			"key": "vcd_dmz_subnet",
+			"value": "255.255.255.0"
+		},
+		{
+			"key": "domainName",
+			"value": "dev1.vcf"
+		},
+		{
+			"key": "vc_datacenter",
+			"value": "sfo-m01-dc01"
+		},
+		{
+			"key": "vc_cluster",
+			"value": "sfo-m01-cl01"
+		},
+		{
+			"key": "vc_res_pool",
+			"value": "sfo-m01-cl01-rp-sddc-mgmt"
+		},
+		{
+			"key": "vc_datastore",
+			"value": "sfo-m01-cl01-ds-vsan01"
+		},
+		{
+			"key": "vrops_ip",
+			"value": "192.168.11.25"
+		},
+		{
+			"key": "vropsta_proxy",
+			"value": "192.168.13.55"
+		},
+		{
+			"key": "vropsta_name",
+			"value": "test-vropsta-01"
+		},
+		{
+			"key": "vropsta_ip",
+			"value": "192.168.13.61"
+		},
+		{
+			"key": "mgmt_nw_portgroup",
+			"value": "xreg-m01-seg01"
+		},
+		{
+			"key": "mgmt_nw_gateway",
+			"value": "192.168.11.1"
+		},
+		{
+			"key": "mgmt_nw_subnet",
+			"value": "255.255.255.0"
+		},
+		{
+			"key": "rmq_01_name",
+			"value": "test-rmq-01"
+		},
+		{
+			"key": "rmq_02_name",
+			"value": "test-rmq-02"
+		},
+		{
+			"key": "rmq_03_name",
+			"value": "test-rmq-03"
+		},
+		{
+			"key": "rmq_01_ip",
+			"value": "192.168.11.91"
+		},
+		{
+			"key": "rmq_02_ip",
+			"value": "192.168.11.92"
+		},
+		{
+			"key": "rmq_03_ip",
+			"value": "192.168.11.93"
+		},
+		{
+			"key": "rmq_lb_ip",
+			"value": "192.168.11.90"
+		},
+		{
+			"key": "rmq_lb_name",
+			"value": "test-rmq-lb-01"
+		},
+		{
+			"key": "rmq_port_amqp_ssl",
+			"value": "5671"
+		},
+		{
+			"key": "rmq_port_mgmt",
+			"value": "15671"
+		},
+		{
+			"key": "usage_meter_ip",
+			"value": "192.168.11.71"
+		},
+		{
+			"key": "usage_meter_name",
+			"value": "test-um-01"
+		},
+		{
+			"key": "nsxt_hostname",
+			"value": "sfo-m01-nsx01"
+		},
+		{
+			"key": "vcenter_hostname",
+			"value": "sfo-m01-vc01"
+		},
+		{
+			"key": "vcd_mgmt_nw_portgroup",
+			"value": "VCD-MGMT"
+		},
+		{
+			"key": "vcd_mgmt_nw_gateway",
+			"value": "192.168.24.1"
+		},
+		{
+			"key": "vcd_mgmt_nw_subnet",
+			"value": "255.255.255.0"
+		},
+		{
+			"key": "vcd_lb_ip",
+			"value": "192.168.13.50"
+		},
+		{
+			"key": "vcd_cell_1_ip",
+			"value": "192.168.13.51"
+		},
+		{
+			"key": "vcd_cell_1_name",
+			"value": "vcd-1-cell-01"
+		},
+		{
+			"key": "vcd_cell_2_ip",
+			"value": "192.168.13.52"
+		},
+		{
+			"key": "vcd_cell_2_name",
+			"value": "vcd-1-cell-02"
+		},
+		{
+			"key": "vcd_cell_1_mgmt_ip",
+			"value": "192.168.24.51"
+		},
+		{
+			"key": "vcd_cell_2_mgmt_ip",
+			"value": "192.168.24.52"
+		},
+		{
+			"key": "vcd_license",
+			"value": ""
+		},
+		{
+			"key": "pvdc_resource_pool",
+			"value": "sfo-m01-cl01-rp-user-vm"
+		},
+		{
+			"key": "pvdc_storage_profile",
+			"value": "vcd-storage-policy"
+		},
+		{
+			"key": "pvdc_np_transport_zone",
+			"value": "sfo-m01-tz-overlay01"
+		},
+		{
+			"key": "pvdc_ext_nw_tier0_gw",
+			"value": "sfo-m01-ec01-t0-gw01"
+		},
+		{
+			"key": "vcd_nfs_mount",
+			"value": "192.168.24.11:/vsanfs/vcd-nfs-1"
+		},
+		{
+			"key": "vcd_cert",
+			"value": "-----BEGIN CERTIFICATE-----\\ntest\\n-----END CERTIFICATE-----"
+		},
+		{
+			"key": "vcd_cert_key",
+			"value": "-----BEGIN RSA PRIVATE KEY-----\\ntest\\n-----END RSA PRIVATE KEY-----"
+		},
+		{
+			"key": "vcd_env_id",
+			"value": "vcd-env-1"
+		},
+		{
+			"key": "vcd_product_id",
+			"value": "vcd-1"
+		},
+		{
+			"key": "vropsta_env_id",
+			"value": "vropsta-env-1"
+		},
+		{
+			"key": "vropsta_product_id",
+			"value": "vropsta-1"
+		},
+		{
+			"key": "um_env_id",
+			"value": "um-env-1"
+		},
+		{
+			"key": "um_product_id",
+			"value": "um-1"
+		},
+		{
+			"key": "rmq_env_id",
+			"value": "rmq-env-1"
+		},
+		{
+			"key": "rmq_product_id",
+			"value": "rmq-1"
+		},
+		{
+			"key": "vropsta_cert",
+			"value": "-----BEGIN CERTIFICATE-----\\ntest\\n-----END CERTIFICATE-----"
+		},
+		{
+			"key": "vropsta_cert_key",
+			"value": "-----BEGIN RSA PRIVATE KEY-----\\ntest\\n-----END RSA PRIVATE KEY-----"
+		},
+		{
+			"key": "um_cert",
+			"value": "-----BEGIN CERTIFICATE-----\\ntest\\n-----END CERTIFICATE-----"
+		},
+		{
+			"key": "um_cert_key",
+			"value": "-----BEGIN RSA PRIVATE KEY-----\\ntest\\n-----END RSA PRIVATE KEY-----"
+		},
+		{
+			"key": "rmq_cert",
+			"value": "-----BEGIN CERTIFICATE-----\\ntest\\n-----END CERTIFICATE-----"
+		},
+		{
+			"key": "rmq_cert_key",
+			"value": "-----BEGIN RSA PRIVATE KEY-----\\ntest\\n-----END RSA PRIVATE KEY-----"
+		},
+		{
+			"key": "last_task_id",
+			"value": "1"
+		},
+		{
+			"key": "vcd_cell_3_name",
+			"value": "vcd-1-cell-03"
+		},
+		{
+			"key": "vcd_cell_3_ip",
+			"value": "192.168.13.53"
+		},
+		{
+			"key": "vcd_cell_3_mgmt_ip",
+			"value": "192.168.24.53"
+		},
+		{
+			"key": "vcd_public_cert",
+			"value": "-----BEGIN CERTIFICATE-----\\ntest\\n-----END CERTIFICATE-----"
+		}
+	]
+}
